@@ -11,7 +11,7 @@ kotlin {
         publishLibraryVariants("release")
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                JavaVersion.VERSION_21.toString()
             }
         }
     }
