@@ -7,17 +7,17 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 
-class PersianMutableKMPCalendar(
+class JalaliMutableKMPCalendar(
     override val timeMillis: Long,
     timeZone: TimeZone = TimeZone.currentSystemDefault()
-) : MutableKMPCalendar, KMPCalendar by PersianKMPCalendar(
+) : MutableKMPCalendar, JalaliKMPCalendar(
     milliseconds = timeMillis,
     timezone = timeZone,
 ) {
     private var _plus: Long = 0
     private var _minus: Long = 0
 
-    override fun plus(value: Long, unit: DateTimeUnit): PersianMutableKMPCalendar {
+    override fun plus(value: Long, unit: DateTimeUnit): JalaliMutableKMPCalendar {
         val newMillis = toDate()
             .toInstant(TimeZone.currentSystemDefault())
             .plus(
@@ -31,8 +31,7 @@ class PersianMutableKMPCalendar(
         return this
     }
 
-
-    override fun minus(value: Long, unit: DateTimeUnit): PersianMutableKMPCalendar {
+    override fun minus(value: Long, unit: DateTimeUnit): JalaliMutableKMPCalendar {
         val newMillis = toDate()
             .toInstant(TimeZone.currentSystemDefault())
             .minus(
@@ -47,7 +46,7 @@ class PersianMutableKMPCalendar(
     }
 
 
-    override fun convert(): PersianMutableKMPCalendar {
-        return PersianMutableKMPCalendar(timeMillis + _plus - _minus)
+    override fun convert(): JalaliMutableKMPCalendar {
+        return JalaliMutableKMPCalendar(timeMillis + _plus - _minus)
     }
 }

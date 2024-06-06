@@ -1,11 +1,7 @@
 package com.orion.date.calendars
 
-import com.orion.date.CalendarType
-import com.orion.date.LanguageType
-import com.orion.date.dayOfWeek
-import com.orion.date.getDayName
-import com.orion.date.getIsLeapYear
-import com.orion.date.getMonthNames
+import com.orion.date.getThisMonthName
+import com.orion.date.language.EnglishGregorianLanguage
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
@@ -17,18 +13,16 @@ import kotlin.jvm.JvmOverloads
 /**
  * month starts from 1
  * */
-class GregorianKMPCalendar : KMPCalendar, Comparable<GregorianKMPCalendar> {
+open class GregorianKMPCalendar : KMPCalendar {
 
-    override val year: Int
-    override val month: Int
-    override val day: Int
-    override val hour: Int
-    override val minute: Int
-    override val second: Int
+    final override val year: Int
+    final override val month: Int
+    final override val day: Int
+    final override val hour: Int
+    final override val minute: Int
+    final override val second: Int
     override val timeMillis: Long
-
-    override val isLeapYear: Boolean
-        get() = getIsLeapYear(year, CalendarType.Persian)
+    final override val timeZone: TimeZone
 
     @JvmOverloads
     constructor(
@@ -40,37 +34,28 @@ class GregorianKMPCalendar : KMPCalendar, Comparable<GregorianKMPCalendar> {
         second: Int,
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
     ) {
-        if (year < 1) {
-            throw IllegalArgumentException("Year must be greater than 0")
+        require(year > 0) { "Year must be greater than 0" }
+        require(month in 1..12) { "Month must be between 1 and 12" }
+        require(day in 1..31) { "Day must be between 1 and 31" }
+        require(hour in 0..23) { "Hour must be between 0 and 23" }
+        require(minute in 0..59) { "Minute must be between 0 and 59" }
+        require(second in 0..59) { "Second must be between 0 and 59" }
+        require(day <= getDaysInThisMonth()) {
+            buildString {
+                append("Day in the ")
+                append(getThisMonthName(EnglishGregorianLanguage))
+                append(" must be between 1 and ")
+                append(getDaysInThisMonth())
+            }
         }
-        this.year = year
-        if (month < 1 || month > 12) {
-            throw IllegalArgumentException("Month must be between 1 and 12")
-        }
-        this.month = month
-        if (day < 1 || day > 31) {
-            throw IllegalArgumentException("Day must be between 1 and 31")
-        }
-        this.day = day
-        if (hour < 0 || hour > 23) {
-            throw IllegalArgumentException("Hour must be between 0 and 23")
-        }
-        this.hour = hour
-        if (minute < 0 || minute > 59) {
-            throw IllegalArgumentException("Minute must be between 0 and 59")
-        }
-        this.minute = minute
-        if (second < 0 || second > 59) {
-            throw IllegalArgumentException("Second must be between 0 and 59")
-        }
-        this.second = second
 
-        if (day > getDaysInThisMonth()) {
-            throw IllegalArgumentException(
-                " Day in the ${getThisMonthName(LanguageType.English)} " +
-                    "must be between 1 and ${getDaysInThisMonth()}"
-            )
-        }
+        this.year = year
+        this.month = month
+        this.day = day
+        this.hour = hour
+        this.minute = minute
+        this.second = second
+        this.timeZone = timeZone
 
         timeMillis = LocalDateTime(
             year = year,
@@ -98,66 +83,45 @@ class GregorianKMPCalendar : KMPCalendar, Comparable<GregorianKMPCalendar> {
         minute = dateTime.minute
         second = dateTime.second
         this.timeMillis = milliseconds
+        this.timeZone = timezone
     }
 
-    @JvmOverloads
-    constructor(
+    private constructor(
         timezone: TimeZone = TimeZone.currentSystemDefault()
     ) : this(
         milliseconds = Clock.System.now().toEpochMilliseconds(),
         timezone = timezone
     )
 
-    /**
-     * starts of from 1*/
-    override fun getDayOfTheWeek(timeZone: TimeZone): Int {
-        return dayOfWeek(timeZone) + 1
-    }
-
     override fun getDaysInThisMonth(): Int {
         return when (month) {
-            2 -> if (isLeapYear) 29 else 28
+            2 -> if (isLeapYear()) 29 else 28
             4, 6, 9, 11 -> 30
             else -> 31
         }
     }
 
     override fun getDaysInThisYear(): Int {
-        return if (
-            getIsLeapYear(
-                year = year,
-                calendarType = CalendarType.Gregorian
-            )
-        ) {
+        return if (isLeapYear()) {
             366
         } else 365
     }
 
-    // region test
-    override fun getMonthNames(languageType: LanguageType): Array<String> {
-        return getMonthNames(CalendarType.Gregorian, languageType)
-    }
-
-    override fun getThisMonthName(languageType: LanguageType): String {
-        return getMonthNames(
-            calendarType = CalendarType.Gregorian,
-            languageType = languageType
-        )[month - 1]
-    }
-
-    // region test
-    override fun getTodayName(
-        timeZone: TimeZone,
-        languageType: LanguageType
-    ): String {
-        return getDayName(dayOfWeek(timeZone) + 1, languageType)
-    }
-
-    override fun toMutable(timeZone: TimeZone): GregorianMutableKMPCalendar {
+    override fun toMutable(): GregorianMutableKMPCalendar {
         return GregorianMutableKMPCalendar(
             timeMillis = timeMillis,
             timeZone = timeZone
         )
+    }
+
+    override fun isLeapYear(): Boolean {
+        if (year % 4 == 0) {
+            if (year % 100 == 0) {
+                return year % 400 == 0
+            }
+            return true
+        }
+        return false
     }
 
     //TODO rename
@@ -165,30 +129,12 @@ class GregorianKMPCalendar : KMPCalendar, Comparable<GregorianKMPCalendar> {
         return if (hour <= 12) AM_NAME else PM_NAME
     }
 
-    override fun compareTo(other: GregorianKMPCalendar): Int {
-        return this.timeMillis.compareTo(other.timeMillis)
-    }
-
-    override fun equals(other: Any?): Boolean {
-        val kmpCalendar = other as? GregorianKMPCalendar
-        return if (kmpCalendar != null) {
-            timeMillis == kmpCalendar.timeMillis
-        } else false
-    }
-
-    override fun hashCode(): Int {
-        var result = year
-        result = 31 * result + month
-        result = 31 * result + day
-        result = 31 * result + hour
-        result = 31 * result + minute
-        result = 31 * result + second
-        result = 31 * result + timeMillis.hashCode()
-        return result
-    }
-
     companion object {
-        const val AM_NAME: String = "AM"
-        const val PM_NAME: String = "PM"
+        private const val AM_NAME: String = "AM"
+        private const val PM_NAME: String = "PM"
+
+        fun now(): GregorianKMPCalendar {
+            return GregorianKMPCalendar()
+        }
     }
 }
