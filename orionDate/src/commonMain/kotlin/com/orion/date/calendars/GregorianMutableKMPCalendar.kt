@@ -10,7 +10,7 @@ import kotlinx.datetime.toInstant
 class GregorianMutableKMPCalendar(
     override val timeMillis: Long,
     timeZone: TimeZone = TimeZone.currentSystemDefault()
-) : MutableKMPCalendar, KMPCalendar by GregorianKMPCalendar(
+) : MutableKMPCalendar, GregorianKMPCalendar(
     milliseconds = timeMillis,
     timezone = timeZone,
 ) {
